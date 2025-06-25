@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/assistant")
@@ -17,13 +18,13 @@ public class AssistantController {
 
     @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> chat(@RequestBody ChatRequest request) {
-        ChatMessage chatMessage = chatService.chatWithAssistant(request.getClientId(), request.getMessage());
+        ChatMessage chatMessage = chatService.chatWithAssistant(request.getClientId(), request.getMessages());
         return ResponseEntity.ok(Map.of("message", chatMessage.getMessage()));
     }
 
     @Data
     public static class ChatRequest {
         private Long clientId;
-        private String message;
+        private List<ChatMessage> messages;
     }
 }

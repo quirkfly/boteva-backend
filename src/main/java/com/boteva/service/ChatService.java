@@ -34,25 +34,19 @@ public class ChatService {
     /**
      * Handles a user message, appends it to history, builds context, and gets AI response.
      */
-    public ChatMessage chatWithAssistant(Long clientId, String userMessage) {
-        List<ChatMessage> history = sessionHistory.computeIfAbsent(clientId.toString(), id -> new ArrayList<>());
+    public ChatMessage chatWithAssistant(Long clientId, List<ChatMessage> messages) {
+        List<ChatMessage> history = new ArrayList<>(messages);
 
-        // Inject system message if this is a new session
+        // Inject system message if missing
         if (history.stream().noneMatch(msg -> "system".equals(msg.getRole()))) {
             history.add(0, buildSystemMessage(clientId));
         }
-
-        // Add user message
-        history.add(ChatMessage.builder()
-            .role("user")
-            .message(userMessage)
-            .timestamp(LocalDateTime.now())
-            .build());
 
         // Convert chat to OpenAI format
         List<com.theokanning.openai.completion.chat.ChatMessage> openAiMessages = history.stream()
             .map(msg -> new com.theokanning.openai.completion.chat.ChatMessage(msg.getRole(), msg.getMessage()))
             .collect(Collectors.toList());
+
         // Create OpenAI chat request
         ChatCompletionRequest request = ChatCompletionRequest.builder()
             .model(openAiModel)
@@ -65,14 +59,12 @@ public class ChatService {
         String aiReply = openAiService.createChatCompletion(request)
             .getChoices().get(0).getMessage().getContent();
 
-        // Record assistant response
+        // Build assistant message
         ChatMessage response = ChatMessage.builder()
             .role("assistant")
             .message(aiReply)
             .timestamp(LocalDateTime.now())
             .build();
-
-        history.add(response);
 
         return response;
     }
